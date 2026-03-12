@@ -3,21 +3,25 @@ package main
 import (
 	"log"
 	"net/http"
+	"sync/atomic"
 )
 
-func healthz(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
+type apiConfig struct {
+	fileServerHits atomic.Int32
 }
 
 func main() {
 	const filepathRoot = "."
 	const port = "8080"
 
+	apiCfg := apiConfig{}
+
 	mux := http.NewServeMux()
-	mux.Handle("/app/", http.StripPrefix("/app/", http.FileServer(http.Dir(filepathRoot))))
-	mux.HandleFunc("/healthz", healthz)
+
+	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(filepathRoot)))))
+	mux.HandleFunc("GET /healthz", handlerStatus)
+	mux.HandleFunc("GET /metrics", apiCfg.handlerMetrics)
+	mux.HandleFunc("POST /reset", apiCfg.handlerReset)
 
 	server := &http.Server{
 		Handler: mux,
