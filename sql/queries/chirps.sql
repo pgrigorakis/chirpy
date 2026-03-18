@@ -8,8 +8,12 @@ VALUES (
     $2)
 RETURNING *;
 
--- name: GetAllFeeds :many
+-- name: GetAllChirps :many
 SELECT * FROM chirps;
+
+-- name: GetAllChirpsByCreateDate :many
+SELECT * FROM chirps
+ORDER BY created_at;
 
 -- name: DeleteFeeds :exec
 DELETE FROM chirps;
