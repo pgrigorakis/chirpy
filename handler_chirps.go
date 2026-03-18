@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -16,25 +17,6 @@ type Chirp struct {
 	UpdatedAt time.Time `json:"updated_at"`
 	Body      string    `json:"body"`
 	UserID    uuid.UUID `json:"user_id"`
-}
-
-func cleanText(input string) (string, error) {
-
-	bannedWords := map[string]struct{}{
-		"kerfuffle": {},
-		"sharbert":  {},
-		"fornax":    {},
-	}
-	words := strings.Split(input, " ")
-
-	for i, word := range words {
-		if _, ok := bannedWords[strings.ToLower(word)]; ok {
-			words[i] = "****"
-		}
-	}
-
-	return strings.Join(words, " "), nil
-
 }
 
 func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request) {
@@ -55,19 +37,14 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if len(params.Body) > 140 {
-		respondWithError(w, http.StatusBadRequest, "Chirp is too long", err)
+	cleanedText, err := validateChirp(params.Body)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't clean text", err)
 		return
 	}
 
-	// cleanedText, err := cleanText(params.Body)
-	// if err != nil {
-	// 	respondWithError(w, http.StatusInternalServerError, "Couldn't clean text", err)
-	// 	return
-	// }
-
 	chirp, err := cfg.db.CreateChirp(r.Context(), database.CreateChirpParams{
-		Body:   params.Body,
+		Body:   cleanedText,
 		UserID: params.UserID},
 	)
 	if err != nil {
@@ -83,4 +60,31 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 			Body:      chirp.Body,
 			UserID:    chirp.UserID},
 	})
+}
+
+func validateChirp(body string) (string, error) {
+	const maxChirpLength = 140
+	if len(body) > maxChirpLength {
+		return "", errors.New("Chirp is too long")
+	}
+
+	cleaned := cleanText(body)
+	return cleaned, nil
+}
+
+func cleanText(input string) string {
+	bannedWords := map[string]struct{}{
+		"kerfuffle": {},
+		"sharbert":  {},
+		"fornax":    {},
+	}
+
+	words := strings.Split(input, " ")
+	for i, word := range words {
+		if _, ok := bannedWords[strings.ToLower(word)]; ok {
+			words[i] = "****"
+		}
+	}
+
+	return strings.Join(words, " ")
 }
