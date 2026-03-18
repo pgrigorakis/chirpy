@@ -3,17 +3,20 @@ package main
 import (
 	"encoding/json"
 	"net/http"
-	"slices"
 	"strings"
 )
 
 func cleanText(input string) (string, error) {
 
-	bannedWords := []string{"kerfuffle", "sharbert", "fornax"}
+	bannedWords := map[string]struct{}{
+		"kerfuffle": {},
+		"sharbert":  {},
+		"fornax":    {},
+	}
 	words := strings.Split(input, " ")
 
 	for i, word := range words {
-		if slices.Contains(bannedWords, strings.ToLower(word)) {
+		if _, ok := bannedWords[strings.ToLower(word)]; ok {
 			words[i] = "****"
 		}
 	}
