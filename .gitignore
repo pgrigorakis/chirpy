@@ -2,3 +2,4 @@ assets/**/*
 out
 chirpy
 .env
+*.vim
