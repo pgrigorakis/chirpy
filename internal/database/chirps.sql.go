@@ -7,33 +7,28 @@ package database
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
 )
 
 const createChirp = `-- name: CreateChirp :one
 INSERT INTO chirps (id, created_at, updated_at, body, user_id)
-VALUES ( $1, $2, $3, $4, $5)
+VALUES ( 
+    gen_random_uuid(),
+    NOW(),
+    NOW(),
+    $1,
+    $2)
 RETURNING id, created_at, updated_at, body, user_id
 `
 
 type CreateChirpParams struct {
-	ID        uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Body      string
-	UserID    uuid.UUID
+	Body   string
+	UserID uuid.UUID
 }
 
 func (q *Queries) CreateChirp(ctx context.Context, arg CreateChirpParams) (Chirp, error) {
-	row := q.db.QueryRowContext(ctx, createChirp,
-		arg.ID,
-		arg.CreatedAt,
-		arg.UpdatedAt,
-		arg.Body,
-		arg.UserID,
-	)
+	row := q.db.QueryRowContext(ctx, createChirp, arg.Body, arg.UserID)
 	var i Chirp
 	err := row.Scan(
 		&i.ID,
