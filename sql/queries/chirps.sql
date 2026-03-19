@@ -15,6 +15,10 @@ SELECT * FROM chirps;
 SELECT * FROM chirps
 ORDER BY created_at;
 
+-- name: GetChirpByID :one
+SELECT * FROM chirps
+WHERE id=$1;
+
 -- name: DeleteFeeds :exec
 DELETE FROM chirps;
 
