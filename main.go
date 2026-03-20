@@ -15,6 +15,7 @@ import (
 type apiConfig struct {
 	fileServerHits atomic.Int32
 	db             *database.Queries
+	jwtToken       string
 	platform       string
 }
 
@@ -23,6 +24,11 @@ func main() {
 	const port = "8080"
 
 	godotenv.Load()
+	jwtToken := os.Getenv("JWT_TOKEN")
+	if jwtToken == "" {
+		log.Fatal("JWT_TOKEN must be set")
+	}
+
 	platform := os.Getenv("PLATFORM")
 	if platform == "" {
 		log.Fatal("PLATFORM must be set")
@@ -42,6 +48,7 @@ func main() {
 	apiCfg := &apiConfig{
 		fileServerHits: atomic.Int32{},
 		db:             dbQueries,
+		jwtToken:       jwtToken,
 		platform:       platform,
 	}
 

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/pgrigorakis/chirpy/internal/auth"
 	"github.com/pgrigorakis/chirpy/internal/database"
 )
 
@@ -22,16 +23,20 @@ type Chirp struct {
 func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	type requestBody struct {
-		Body   string    `json:"body"`
-		UserID uuid.UUID `json:"user_id"`
+		Body string `json:"body"`
 	}
 	type responseBody struct {
 		Chirp
 	}
 
+	tokenUserID, err := validateUser(r.Header, cfg.jwtToken)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Couldn't validate JWT", err)
+	}
+
 	decoder := json.NewDecoder(r.Body)
 	params := requestBody{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
 		return
@@ -39,16 +44,16 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 
 	cleanedText, err := validateChirp(params.Body)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't clean text", err)
+		respondWithError(w, http.StatusInternalServerError, "Couldn't clean text: %w", err)
 		return
 	}
 
 	chirp, err := cfg.db.CreateChirp(r.Context(), database.CreateChirpParams{
 		Body:   cleanedText,
-		UserID: params.UserID},
-	)
+		UserID: tokenUserID,
+	})
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't create chirp", err)
+		respondWithError(w, http.StatusInternalServerError, "Couldn't create chirp: %w", err)
 		return
 	}
 
@@ -70,6 +75,20 @@ func validateChirp(body string) (string, error) {
 
 	cleaned := cleanText(body)
 	return cleaned, nil
+}
+
+func validateUser(headers http.Header, tokenSecret string) (uuid.UUID, error) {
+	token, err := auth.GetBearerToken(headers)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	userID, err := auth.ValidateJWT(token, tokenSecret)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return userID, nil
 }
 
 func cleanText(input string) string {
