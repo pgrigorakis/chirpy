@@ -8,25 +8,23 @@ import (
 )
 
 func (cfg *apiConfig) handlerChirpsGetAll(w http.ResponseWriter, r *http.Request) {
-	authorIDHeader := r.URL.Query().Get("author_id")
+	authorID, err := uuid.Parse(r.URL.Query().Get("author_id"))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't parse author id: %w", err)
+	}
 
 	var dbChirps []database.Chirp
-	var err error
-	if authorIDHeader == "" {
+	if authorID == uuid.Nil {
 		dbChirps, err = cfg.db.GetAllChirpsByCreateDate(r.Context())
 	} else {
-		authorID, err := uuid.Parse(authorIDHeader)
-		if err != nil {
-			respondWithError(w, http.StatusInternalServerError, "Couldn't parse author id: %w", err)
-		}
 		dbChirps, err = cfg.db.GetChirpsByAuthor(r.Context(), authorID)
 	}
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't retrieve chirps: %w", err)
 		return
 	}
-	var chirps []Chirp
-	// chirps := []Chirp{}
+
+	var chirps []Chirp // or chirps := []Chirp{}
 	for _, dbChirp := range dbChirps {
 		chirp := Chirp{
 			ID:        dbChirp.ID,
