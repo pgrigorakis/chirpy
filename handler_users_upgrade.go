@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 
 	"github.com/google/uuid"
+	"github.com/pgrigorakis/chirpy/internal/auth"
 )
 
 func (cfg *apiConfig) handlerUsersUpgrade(w http.ResponseWriter, r *http.Request) {
@@ -17,9 +19,21 @@ func (cfg *apiConfig) handlerUsersUpgrade(w http.ResponseWriter, r *http.Request
 			UserID string `json:"user_id"`
 		} `json:"data"`
 	}
+
+	headerApiKey, err := auth.GetPolkaKey(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Couldn't read header: %w", err)
+		return
+	}
+
+	if headerApiKey != os.Getenv("POLKA_KEY") {
+		respondWithError(w, http.StatusUnauthorized, "Incorrect API key", err)
+		return
+	}
+
 	decoder := json.NewDecoder(r.Body)
 	params := requestBody{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters: %w", err)
 		return

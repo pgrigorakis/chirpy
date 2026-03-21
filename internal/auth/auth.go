@@ -107,3 +107,14 @@ func MakeRefreshToken() string {
 
 	return hexKey
 }
+
+func GetPolkaKey(headers http.Header) (string, error) {
+	authHeader := headers.Get("Authorization")
+	if authHeader == "" {
+		return "", errors.New("header missing")
+	}
+
+	polkaKey := strings.TrimPrefix(authHeader, "ApiKey ")
+
+	return polkaKey, nil
+}
