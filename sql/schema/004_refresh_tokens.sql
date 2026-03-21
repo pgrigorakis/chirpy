@@ -12,4 +12,3 @@ REFERENCES users(id) ON DELETE CASCADE
 
 -- +goose Down
 DROP TABLE refresh_tokens;
-
