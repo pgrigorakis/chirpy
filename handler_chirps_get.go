@@ -4,15 +4,27 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/pgrigorakis/chirpy/internal/database"
 )
 
 func (cfg *apiConfig) handlerChirpsGetAll(w http.ResponseWriter, r *http.Request) {
-	dbChirps, err := cfg.db.GetAllChirpsByCreateDate(r.Context())
+	authorIDHeader := r.URL.Query().Get("author_id")
+
+	var dbChirps []database.Chirp
+	var err error
+	if authorIDHeader == "" {
+		dbChirps, err = cfg.db.GetAllChirpsByCreateDate(r.Context())
+	} else {
+		authorID, err := uuid.Parse(authorIDHeader)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "Couldn't parse author id: %w", err)
+		}
+		dbChirps, err = cfg.db.GetChirpsByAuthor(r.Context(), authorID)
+	}
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't retrieve chirps: %w", err)
 		return
 	}
-
 	var chirps []Chirp
 	// chirps := []Chirp{}
 	for _, dbChirp := range dbChirps {
