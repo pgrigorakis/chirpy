@@ -17,6 +17,7 @@ type apiConfig struct {
 	db             *database.Queries
 	jwtToken       string
 	platform       string
+	polkaKey       string
 }
 
 func main() {
@@ -32,6 +33,11 @@ func main() {
 	platform := os.Getenv("PLATFORM")
 	if platform == "" {
 		log.Fatal("PLATFORM must be set")
+	}
+
+	polkaKey := os.Getenv("POLKA_KEY")
+	if platform == "" {
+		log.Fatal("Polka key must be set")
 	}
 
 	dbUrl := os.Getenv("DB_URL")
@@ -50,6 +56,7 @@ func main() {
 		db:             dbQueries,
 		jwtToken:       jwtToken,
 		platform:       platform,
+		polkaKey:       polkaKey,
 	}
 
 	mux := http.NewServeMux()
