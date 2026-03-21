@@ -25,9 +25,9 @@ func main() {
 	const port = "8080"
 
 	godotenv.Load()
-	jwtToken := os.Getenv("JWT_TOKEN")
+	jwtToken := os.Getenv("JWT_SECRET")
 	if jwtToken == "" {
-		log.Fatal("JWT_TOKEN must be set")
+		log.Fatal("JWT_SECRET must be set")
 	}
 
 	platform := os.Getenv("PLATFORM")
